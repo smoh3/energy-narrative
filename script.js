@@ -3,15 +3,15 @@ const scenes = [scene0, scene1, scene2];
 const sceneInfo = [
   {
     title: "Total Primary Energy Consumption (PJ)",
-    desc: "Global energy use rose from about 43 360 PJ in 1965 to over 170 000 PJ today."
+    desc: "This chart shows total global energy use, measured in petajoules (PJ), climbing from about 43 360 PJ in 1965 to over 170 000 PJ today. “Primary energy” includes coal, oil, gas, nuclear, and renewables before conversion losses. The steady rise reflects population growth, industrialization, and greater living standards worldwide."
   },
   {
     title: "Renewables Share of Total Energy (%)",
-    desc: "Renewables stayed under 6 % of global energy until the 2000s, only reaching 10 % around 2016."
+    desc: "Here we see the percentage of global energy coming from renewables (hydro, wind, solar, etc.). Despite early interest, renewables remained under 6 % until the early 2000s. Policy incentives and cost reductions drove growth around 2010, pushing the share past 10 % by 2016."
   },
   {
     title: "Fossil vs. Zero-Carbon Energy",
-    desc: "Zero-carbon sources (nuclear + renewables) have grown but still trail behind fossil fuels."
+    desc: "This stacked area chart compares fossil fuels (coal, oil, gas) with zero-carbon sources (nuclear + renewables). While both have grown, fossil energy still dominates. Zero-carbon’s visible rise in the 1990s and 2000s highlights the slow shift toward cleaner energy sources."
   }
 ];
 
@@ -19,10 +19,9 @@ const tooltip = d3.select("#tooltip");
 const svg = d3.select("#chart");
 const { width: svgW, height: svgH } = svg.node().getBoundingClientRect();
 const margin = { top: 40, right: 20, bottom: 60, left: 70 };
-const innerWidth  = svgW - margin.left - margin.right;
-const innerHeight = svgH - margin.top  - margin.bottom;
+const innerWidth = svgW - margin.left - margin.right;
+const innerHeight = svgH - margin.top - margin.bottom;
 const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
-
 const x = d3.scaleLinear().range([0, innerWidth]);
 const y = d3.scaleLinear().range([innerHeight, 0]);
 
@@ -33,13 +32,10 @@ d3.csv(
   const worldRaw = data.filter(d => d.country === "World");
   const world = worldRaw.filter(d => Number.isFinite(d.primary_energy_consumption));
   world.forEach(d => {
-    d.primary         = d.primary_energy_consumption;
+    d.primary = d.primary_energy_consumption;
     d.renewablesShare = d.renewables_consumption / d.primary * 100;
-    d.fossil          = (d.coal_consumption   || 0)
-                      + (d.oil_consumption    || 0)
-                      + (d.gas_consumption    || 0);
-    d.zeroCarbon      = (d.nuclear_consumption || 0)
-                      + (d.renewables_consumption || 0);
+    d.fossil = (d.coal_consumption || 0) + (d.oil_consumption || 0) + (d.gas_consumption || 0);
+    d.zeroCarbon = (d.nuclear_consumption || 0) + (d.renewables_consumption || 0);
   });
   x.domain(d3.extent(world, d => d.year));
   y.domain([0, d3.max(world, d => d.primary)]);
@@ -61,14 +57,12 @@ function scene0() {
     .defined(d => Number.isFinite(d.primary))
     .x(d => x(d.year))
     .y(d => y(d.primary));
-
   g.append("path")
     .datum(world)
     .attr("fill", "none")
     .attr("stroke", "#333")
     .attr("stroke-width", 2)
     .attr("d", line);
-
   g.selectAll("circle.datapoint")
     .data(world)
     .join("circle")
@@ -82,12 +76,11 @@ function scene0() {
       })
       .on("mousemove", event => {
         tooltip.style("left", (event.pageX + 10) + "px")
-               .style("top",  (event.pageY - 28) + "px");
+               .style("top", (event.pageY - 28) + "px");
       })
       .on("mouseout", () => {
         tooltip.style("opacity", 0);
       });
-
   drawAxes("Primary Energy (PJ)", "Year");
 }
 
@@ -97,14 +90,12 @@ function scene1() {
     .defined(d => Number.isFinite(d.renewablesShare))
     .x(d => x(d.year))
     .y(d => y(d.renewablesShare));
-
   g.append("path")
     .datum(world)
     .attr("fill", "none")
     .attr("stroke", "green")
     .attr("stroke-width", 2)
     .attr("d", line);
-
   g.selectAll("circle.datapoint")
     .data(world)
     .join("circle")
@@ -118,12 +109,11 @@ function scene1() {
       })
       .on("mousemove", event => {
         tooltip.style("left", (event.pageX + 10) + "px")
-               .style("top",  (event.pageY - 28) + "px");
+               .style("top", (event.pageY - 28) + "px");
       })
       .on("mouseout", () => {
         tooltip.style("opacity", 0);
       });
-
   drawAxes("Renewables Share (%)", "Year");
 }
 
@@ -131,26 +121,25 @@ function scene2() {
   y.domain([0, d3.max(world, d => d.fossil + d.zeroCarbon)]);
   const series = d3.stack().keys(["fossil","zeroCarbon"])(world);
   const color = d3.scaleOrdinal()
-                  .domain(["fossil","zeroCarbon"])
-                  .range(["#888","#4CAF50"]);
+    .domain(["fossil","zeroCarbon"])
+    .range(["#888","#4CAF50"]);
   const area = d3.area()
     .defined(d => Number.isFinite(d[0]) && Number.isFinite(d[1]))
     .x(d => x(d.data.year))
     .y0(d => y(d[0]))
     .y1(d => y(d[1]));
-
   g.selectAll("path.area")
     .data(series)
     .join("path")
       .attr("fill", d => color(d.key))
       .attr("d", area);
-
   drawAxes("Energy (PJ)", "Year");
 }
 
 function drawAxes(yLabel, xLabel) {
   g.append("g")
-    .call(d3.axisLeft(y).tickFormat(d => d3.format(",")(d) + (yLabel.includes("(%") ? "" : " PJ")));
+    .call(d3.axisLeft(y)
+      .tickFormat(d => d3.format(",")(d) + (yLabel.includes("%") ? "" : " PJ")));
   g.append("text")
     .attr("transform", "rotate(-90)")
     .attr("y", -margin.left + 15)
