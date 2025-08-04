@@ -1,17 +1,13 @@
-// script.js
-
 // PARAMETERS
 let currentScene = 0;
 const scenes = [scene0, scene1, scene2];
 
-// Grab the SVG and measure its size
+// SVG & margin setup
 const svg = d3.select("#chart");
 const { width: svgW, height: svgH } = svg.node().getBoundingClientRect();
 const margin = { top: 40, right: 20, bottom: 40, left: 60 };
 const width = svgW - margin.left - margin.right;
 const height = svgH - margin.top - margin.bottom;
-
-// Create a group for margins
 const g = svg.append("g")
   .attr("transform", `translate(${margin.left},${margin.top})`);
 
@@ -19,21 +15,20 @@ const g = svg.append("g")
 const x = d3.scaleLinear().range([0, width]);
 const y = d3.scaleLinear().range([height, 0]);
 
-// LOAD DATA from OWID public S3 (includes OWID_WRL) :contentReference[oaicite:0]{index=0}
+// Load data from the OWID GitHub raw CSV (contains OWID_WRL) :contentReference[oaicite:0]{index=0}
 d3.csv(
-  "https://nyc3.digitaloceanspaces.com/owid-public/data/energy/owid-energy-data.csv",
+  "https://raw.githubusercontent.com/owid/energy-data/master/owid-energy-data.csv",
   d3.autoType
 )
   .then(data => {
-    // Filter for the global aggregate
     const world = data.filter(d => d.iso_code === "OWID_WRL");
     console.log("Data loaded, world rows:", world.length);
     if (!world.length) {
-      console.error("No global (OWID_WRL) rows—check the CSV URL or iso_code");
+      console.error("No OWID_WRL rows—check the CSV URL or iso_code");
       return;
     }
 
-    // Compute our three series
+    // Compute series
     world.forEach(d => {
       d.primary = d.primary_energy_consumption;
       d.renewablesShare = (d.renewables_consumption / d.primary) * 100;
@@ -41,14 +36,11 @@ d3.csv(
       d.zeroCarbon = d.nuclear_consumption + d.renewables_consumption;
     });
 
-    // Set initial domains (scene 0)
+    // Initial domains for scene0
     x.domain(d3.extent(world, d => d.year));
     y.domain([0, d3.max(world, d => d.primary)]);
 
-    // Expose globally
     window.world = world;
-
-    // First draw
     render();
   })
   .catch(err => console.error("Data load failed:", err));
@@ -81,7 +73,6 @@ function scene0() {
 
   drawAxes();
 
-  // Annotate the latest point
   const last = world[world.length - 1];
   annotate(last.year, last.primary, `${last.year}: ${Math.round(last.primary)} PJ`);
 }
@@ -103,15 +94,13 @@ function scene1() {
 
   drawAxes();
 
-  // Annotate when it first crosses 10%
   const cross = world.find(d => d.renewablesShare >= 10);
   annotate(cross.year, cross.renewablesShare, `~${cross.year}: 10% Renewables`);
 }
 
-// Scene 2: Stacked fossil vs zero‐carbon
+// Scene 2: Stacked fossil vs zero-carbon
 function scene2() {
   y.domain([0, d3.max(world, d => d.fossil + d.zeroCarbon)]);
-
   const stack = d3.stack().keys(["fossil", "zeroCarbon"]);
   const series = stack(world);
 
@@ -132,10 +121,9 @@ function scene2() {
 
   drawAxes();
 
-  // Annotate mid‐century shift
   const mid = world[Math.floor(world.length / 2)];
   annotate(mid.year, mid.fossil + mid.zeroCarbon,
-           `${mid.year}: Zero‐carbon growth`, -60, 20);
+           `${mid.year}: Zero-carbon growth`, -60, 20);
 }
 
 // Axes helper
@@ -147,14 +135,13 @@ function drawAxes() {
 }
 
 // Annotation helper
-function annotate(year, value, label, dx = -50, dy = -50) {
+function annotate(year, val, label, dx = -50, dy = -50) {
   const ann = [{
     note: { label },
-    x: x(year), y: y(value),
+    x: x(year), y: y(val),
     dx, dy,
     subject: { radius: 4 }
   }];
-
   d3.select("#annotation")
     .append("svg")
       .attr("width", width)
