@@ -4,12 +4,12 @@ const sceneInfo = [
   {
     title: "Total Primary Energy Consumption (PJ)",
     desc: `<p><strong>Hover over the points</strong> to see exact values.</p>
-      <p>This chart shows total global energy use, measured in petajoules (PJ), climbing from about 43 360 PJ in 1965 to over 170 000 PJ today. “Primary energy” includes coal, oil, gas, nuclear, and renewables before conversion losses. The steady rise reflects population growth, industrialization, and greater living standards worldwide.</p>`
+      <p>This chart shows total global energy use, measured in petajoules (PJ), climbing from about 43,360 PJ in 1965 to over 170,000 PJ today. “Primary energy” includes coal, oil, gas, nuclear, and renewables before conversion losses. The steady rise reflects population growth, industrialization, and greater living standards worldwide.</p>`
   },
   {
     title: "Renewables Share of Total Energy (%)",
     desc: `<p><strong>Hover over the points</strong> to see exact values.</p>
-      <p>Here we see the percentage of global energy coming from renewables (hydro, wind, solar, etc.). Despite early interest, renewables remained under 6 % until the early 2000s. Policy incentives and cost reductions drove growth around 2010, pushing the share past 10 % by 2016.</p>`
+      <p>Here we see the percentage of global energy coming from renewables (hydro, wind, solar, etc.). Despite early interest, renewables remained under 6% until the early 2000s. Policy incentives and cost reductions drove growth around 2010, pushing the share past 10% by 2016.</p>`
   },
   {
     title: "Fossil vs. Zero-Carbon Energy",
