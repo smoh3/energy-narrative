@@ -21,7 +21,7 @@ const sceneInfo = [
 const tooltip = d3.select("#tooltip");
 const svg = d3.select("#chart");
 const { width: svgW, height: svgH } = svg.node().getBoundingClientRect();
-const margin = { top: 40, right: 20, bottom: 60, left: 70 };
+const margin = { top: 40, right: 20, bottom: 80, left: 80 };
 const innerWidth  = svgW - margin.left - margin.right;
 const innerHeight = svgH - margin.top  - margin.bottom;
 const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
@@ -60,14 +60,12 @@ function scene0() {
     .defined(d => Number.isFinite(d.primary))
     .x(d => x(d.year))
     .y(d => y(d.primary));
-
   g.append("path")
     .datum(world)
     .attr("fill", "none")
     .attr("stroke", "#333")
     .attr("stroke-width", 2)
     .attr("d", line);
-
   g.selectAll("circle.datapoint")
     .data(world)
     .join("circle")
@@ -80,31 +78,25 @@ function scene0() {
                .html(`${d.year}: ${d3.format(",")(Math.round(d.primary))} PJ`);
       })
       .on("mousemove", event => {
-        tooltip.style("left", (event.pageX + 10) + "px")
-               .style("top",  (event.pageY - 28) + "px");
+        tooltip.style("left", `${event.pageX + 10}px`)
+               .style("top", `${event.pageY - 28}px`);
       })
-      .on("mouseout", () => {
-        tooltip.style("opacity", 0);
-      });
-
+      .on("mouseout", () => tooltip.style("opacity", 0));
   drawAxes("Primary Energy (PJ)", "Year");
 }
 
 function scene1() {
   y.domain([0, 100]);
-
   const line = d3.line()
     .defined(d => Number.isFinite(d.renewablesShare))
     .x(d => x(d.year))
     .y(d => y(d.renewablesShare));
-
   g.append("path")
     .datum(world)
     .attr("fill", "none")
     .attr("stroke", "green")
     .attr("stroke-width", 2)
     .attr("d", line);
-
   g.selectAll("circle.datapoint")
     .data(world)
     .join("circle")
@@ -117,13 +109,10 @@ function scene1() {
                .html(`${d.year}: ${d.renewablesShare.toFixed(1)}%`);
       })
       .on("mousemove", event => {
-        tooltip.style("left", (event.pageX + 10) + "px")
-               .style("top",  (event.pageY - 28) + "px");
+        tooltip.style("left", `${event.pageX + 10}px`)
+               .style("top", `${event.pageY - 28}px`);
       })
-      .on("mouseout", () => {
-        tooltip.style("opacity", 0);
-      });
-
+      .on("mouseout", () => tooltip.style("opacity", 0));
   drawAxes("Renewables Share (%)", "Year");
 }
 
@@ -138,23 +127,20 @@ function scene2() {
     .x(d => x(d.data.year))
     .y0(d => y(d[0]))
     .y1(d => y(d[1]));
-
   g.selectAll("path.area")
     .data(series)
     .join("path")
       .attr("fill", d => color(d.key))
       .attr("d", area);
-
   drawAxes("Energy (PJ)", "Year");
 }
 
 function drawAxes(yLabel, xLabel) {
   g.append("g")
-    .call(d3.axisLeft(y)
-      .tickFormat(d => {
-        const fmt = d3.format(",")(d);
-        return yLabel.includes("%") ? fmt + "%" : fmt + " PJ";
-      }));
+    .call(d3.axisLeft(y).tickFormat(d => {
+      const fmt = d3.format(",")(d);
+      return yLabel.includes("%") ? fmt + "%" : fmt + " PJ";
+    }));
   g.append("text")
     .attr("transform", "rotate(-90)")
     .attr("y", -margin.left + 15)
@@ -163,15 +149,14 @@ function drawAxes(yLabel, xLabel) {
     .style("text-anchor", "middle")
     .style("font-weight", "bold")
     .text(yLabel);
-
   g.append("g")
     .attr("transform", `translate(0,${innerHeight})`)
     .call(d3.axisBottom(x).tickFormat(d3.format("d")));
-
   g.append("text")
     .attr("x", innerWidth / 2)
-    .attr("y", innerHeight + margin.bottom - 10)
+    .attr("y", innerHeight + margin.bottom - 20)
     .style("text-anchor", "middle")
+    .style("font-size", "0.8rem")
     .text(xLabel);
 }
 
