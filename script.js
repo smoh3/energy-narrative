@@ -22,7 +22,7 @@ const tooltip = d3.select("#tooltip");
 const svg = d3.select("#chart");
 const { width: svgW, height: svgH } = svg.node().getBoundingClientRect();
 
-const margin = { top: 40, right: 20, bottom: 60, left: 100 };
+const margin = { top: 40, right: 20, bottom: 80, left: 120 };
 const innerWidth  = svgW - margin.left - margin.right;
 const innerHeight = svgH - margin.top  - margin.bottom;
 
@@ -162,7 +162,7 @@ function drawAxes(yLabel, xLabel) {
   g.append("text")
     .attr("transform", "rotate(-90)")
     .attr("x", -innerHeight / 2)
-    .attr("y", -margin.left + 20)
+    .attr("y", -margin.left + 10)
     .style("text-anchor", "middle")
     .style("font-size", "0.8rem")
     .text(yLabel);
