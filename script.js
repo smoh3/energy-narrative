@@ -1,3 +1,5 @@
+// script.js
+
 // PARAMETERS
 let currentScene = 0;
 const scenes = [scene0, scene1, scene2];
@@ -15,9 +17,9 @@ const g = svg.append("g")
 const x = d3.scaleLinear().range([0, width]);
 const y = d3.scaleLinear().range([height, 0]);
 
-// Load data from the OWID GitHub raw CSV (contains OWID_WRL) :contentReference[oaicite:0]{index=0}
+// LOAD DATA from OWID’s public bucket :contentReference[oaicite:0]{index=0}
 d3.csv(
-  "https://raw.githubusercontent.com/owid/energy-data/master/owid-energy-data.csv",
+  "https://nyc3.digitaloceanspaces.com/owid-public/data/energy/owid-energy-data.csv",
   d3.autoType
 )
   .then(data => {
@@ -28,15 +30,15 @@ d3.csv(
       return;
     }
 
-    // Compute series
+    // Compute the three series
     world.forEach(d => {
-      d.primary = d.primary_energy_consumption;
-      d.renewablesShare = (d.renewables_consumption / d.primary) * 100;
-      d.fossil = d.coal_consumption + d.oil_consumption + d.gas_consumption;
-      d.zeroCarbon = d.nuclear_consumption + d.renewables_consumption;
+      d.primary        = d.primary_energy_consumption;
+      d.renewablesShare= (d.renewables_consumption / d.primary) * 100;
+      d.fossil         = d.coal_consumption + d.oil_consumption + d.gas_consumption;
+      d.zeroCarbon     = d.nuclear_consumption + d.renewables_consumption;
     });
 
-    // Initial domains for scene0
+    // Initial domains for scene 0
     x.domain(d3.extent(world, d => d.year));
     y.domain([0, d3.max(world, d => d.primary)]);
 
@@ -45,7 +47,7 @@ d3.csv(
   })
   .catch(err => console.error("Data load failed:", err));
 
-// Dispatcher
+// RENDER dispatcher
 function render() {
   const titles = [
     "Total Primary Energy Consumption (PJ)",
@@ -58,7 +60,7 @@ function render() {
   scenes[currentScene]();
 }
 
-// Scene 0: Total primary energy line
+// SCENE 0: Total Primary Energy
 function scene0() {
   const line = d3.line()
     .x(d => x(d.year))
@@ -77,7 +79,7 @@ function scene0() {
   annotate(last.year, last.primary, `${last.year}: ${Math.round(last.primary)} PJ`);
 }
 
-// Scene 1: Renewables share line
+// SCENE 1: Renewables Share
 function scene1() {
   y.domain([0, 100]);
 
@@ -98,11 +100,10 @@ function scene1() {
   annotate(cross.year, cross.renewablesShare, `~${cross.year}: 10% Renewables`);
 }
 
-// Scene 2: Stacked fossil vs zero-carbon
+// SCENE 2: Fossil vs Zero-Carbon Stack
 function scene2() {
   y.domain([0, d3.max(world, d => d.fossil + d.zeroCarbon)]);
-  const stack = d3.stack().keys(["fossil", "zeroCarbon"]);
-  const series = stack(world);
+  const series = d3.stack().keys(["fossil", "zeroCarbon"])(world);
 
   const color = d3.scaleOrdinal()
     .domain(["fossil", "zeroCarbon"])
@@ -126,7 +127,7 @@ function scene2() {
            `${mid.year}: Zero-carbon growth`, -60, 20);
 }
 
-// Axes helper
+// AXES helper
 function drawAxes() {
   g.append("g").call(d3.axisLeft(y));
   g.append("g")
@@ -134,7 +135,7 @@ function drawAxes() {
     .call(d3.axisBottom(x).tickFormat(d3.format("d")));
 }
 
-// Annotation helper
+// ANNOTATION helper
 function annotate(year, val, label, dx = -50, dy = -50) {
   const ann = [{
     note: { label },
@@ -152,7 +153,7 @@ function annotate(year, val, label, dx = -50, dy = -50) {
     );
 }
 
-// Prev/Next buttons
+// CONTROLS
 d3.select("#prev").on("click", () => {
   if (currentScene > 0) currentScene--;
   render();
