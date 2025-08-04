@@ -1,12 +1,18 @@
+// script.js
+
 // PARAMETERS
 let currentScene = 0;
 const scenes = [scene0, scene1, scene2];
 
-// SVG, margins, and group setup
+// Grab the SVG and measure its size from CSS
 const svg = d3.select("#chart");
+const svgNode = svg.node();
+const bbox = svgNode.getBoundingClientRect();
 const margin = { top: 40, right: 20, bottom: 40, left: 60 };
-const width = parseInt(svg.style("width")) - margin.left - margin.right;
-const height = parseInt(svg.style("height")) - margin.top - margin.bottom;
+const width = bbox.width - margin.left - margin.right;
+const height = bbox.height - margin.top - margin.bottom;
+
+// A group inside the SVG to apply margins
 const g = svg.append("g")
   .attr("transform", `translate(${margin.left},${margin.top})`);
 
@@ -14,33 +20,41 @@ const g = svg.append("g")
 const x = d3.scaleLinear().range([0, width]);
 const y = d3.scaleLinear().range([height, 0]);
 
-// Load data from OWID GitHub
-d3.csv("https://raw.githubusercontent.com/owid/energy-data/master/owid-energy-data.csv", d3.autoType)
+// Load data
+d3.csv(
+  "https://raw.githubusercontent.com/owid/energy-data/master/owid-energy-data.csv",
+  d3.autoType
+)
   .then(data => {
-    // Filter to world aggregate
+    // Filter for global aggregate
     const world = data.filter(d => d.iso_code === "OWID_WRL");
+    console.log("Data loaded, world points:", world.length);
+    if (!world.length) {
+      console.error("No OWID_WRL rows found—check iso_code or CSV URL");
+      return;
+    }
 
-    // Compute series values
+    // Compute derived series
     world.forEach(d => {
       d.primary = d.primary_energy_consumption;
-      d.renewablesShare = d.renewables_consumption / d.primary * 100;
+      d.renewablesShare = (d.renewables_consumption / d.primary) * 100;
       d.fossil = d.coal_consumption + d.oil_consumption + d.gas_consumption;
       d.zeroCarbon = d.nuclear_consumption + d.renewables_consumption;
     });
 
-    // Initial scale domains
+    // Initial domains (for scene0)
     x.domain(d3.extent(world, d => d.year));
     y.domain([0, d3.max(world, d => d.primary)]);
 
-    // Expose to scenes
+    // Expose globally
     window.world = world;
 
-    // Render first scene
+    // First render
     render();
   })
   .catch(err => console.error("Data load failed:", err));
 
-// Render dispatcher
+// Renders whichever scene currentScene points at
 function render() {
   const titles = [
     "Total Primary Energy Consumption (PJ)",
@@ -48,12 +62,12 @@ function render() {
     "Fossil vs. Zero-Carbon Energy"
   ];
   d3.select("#title").text(titles[currentScene]);
-  d3.select("#annotation").html("");
-  g.selectAll("*").remove();
+  d3.select("#annotation").html("");  // clear old annotation
+  g.selectAll("*").remove();          // clear old chart
   scenes[currentScene]();
 }
 
-// Scene 0: Total Primary Energy
+// SCENE 0: Total Primary Energy over Time
 function scene0() {
   const line = d3.line()
     .x(d => x(d.year))
@@ -66,15 +80,16 @@ function scene0() {
     .attr("stroke-width", 2)
     .attr("d", line);
 
-  drawAxes(x, y);
+  drawAxes();
 
-  // Annotation: latest value
+  // Annotate the latest point
   const latest = world[world.length - 1];
   annotate(latest.year, latest.primary, `2021: ${Math.round(latest.primary)} PJ`);
 }
 
-// Scene 1: Renewables Share
+// SCENE 1: Renewables Share
 function scene1() {
+  // New y-domain [0,100]
   y.domain([0, 100]);
 
   const line = d3.line()
@@ -88,13 +103,14 @@ function scene1() {
     .attr("stroke-width", 2)
     .attr("d", line);
 
-  drawAxes(x, y);
+  drawAxes();
 
+  // Annotate when it first crosses 10%
   const cross = world.find(d => d.renewablesShare >= 10);
   annotate(cross.year, cross.renewablesShare, `~${cross.year}: Renewables hit 10%`);
 }
 
-// Scene 2: Fossil vs Zero-Carbon Split
+// SCENE 2: Fossil vs Zero-Carbon Stack
 function scene2() {
   y.domain([0, d3.max(world, d => d.fossil + d.zeroCarbon)]);
 
@@ -107,10 +123,10 @@ function scene2() {
     .domain(["fossil", "zeroCarbon"])
     .range(["#888", "#4CAF50"]);
 
-  g.selectAll(".area")
+  g.selectAll("path.area")
     .data(series)
-    .enter()
-    .append("path")
+    .join("path")
+      .attr("class", "area")
       .attr("fill", d => color(d.key))
       .attr("d", d3.area()
         .x(d => x(d.data.year))
@@ -118,21 +134,23 @@ function scene2() {
         .y1(d => y(d[1]))
       );
 
-  drawAxes(x, y);
+  drawAxes();
 
+  // Annotate mid-century
   const mid = world[Math.floor(world.length / 2)];
-  annotate(mid.year, mid.fossil + mid.zeroCarbon, `${mid.year}: Zero-carbon starts growing`, -60, 20);
+  annotate(mid.year, mid.fossil + mid.zeroCarbon,
+           `${mid.year}: Zero-carbon grows`, -60, 20);
 }
 
-// Utility: draw axes
-function drawAxes(xScale, yScale) {
-  g.append("g").call(d3.axisLeft(yScale));
+// Draw X & Y axes
+function drawAxes() {
+  g.append("g").call(d3.axisLeft(y));
   g.append("g")
     .attr("transform", `translate(0,${height})`)
-    .call(d3.axisBottom(xScale).tickFormat(d3.format("d")));
+    .call(d3.axisBottom(x).tickFormat(d3.format("d")));
 }
 
-// Utility: annotation
+// Place an annotation callout circle + text
 function annotate(year, value, label, dx = -50, dy = -50) {
   const ann = [{
     note: { label },
@@ -141,21 +159,23 @@ function annotate(year, value, label, dx = -50, dy = -50) {
     subject: { radius: 4 }
   }];
 
-  d3.annotation()
-    .annotations(ann)
-    .type(d3.annotationCalloutCircle)
-    (d3.select("#annotation")
-      .append("svg")
+  // Add a small svg layer for the annotation
+  d3.select("#annotation")
+    .append("svg")
       .attr("width", width)
-      .attr("height", height));
+      .attr("height", height)
+    .call(d3.annotation()
+      .annotations(ann)
+      .type(d3.annotationCalloutCircle)
+    );
 }
 
-// Controls
-d3.select("#next").on("click", () => {
-  if (currentScene < scenes.length - 1) currentScene++;
-  render();
-});
+// Wire up Prev/Next
 d3.select("#prev").on("click", () => {
   if (currentScene > 0) currentScene--;
+  render();
+});
+d3.select("#next").on("click", () => {
+  if (currentScene < scenes.length - 1) currentScene++;
   render();
 });
