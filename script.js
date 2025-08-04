@@ -13,7 +13,7 @@ const sceneInfo = [
   },
   {
     title: "Fossil vs. Zero-Carbon Energy (PJ) over Time",
-    desc: `<p>This stacked area chart compares fossil fuels (coal, oil, gas) with zero-carbon sources (nuclear + renewables). While both have grown, fossil energy still dominates. Zero-carbon’s visible rise in the 1990s and 2000s highlights the slow shift toward cleaner energy sources.</p>
+    desc: `<p>This stacked area chart compares fossil fuels (coal, oil, gas) with zero-carbon sources (nuclear + renewables), all in PJ. While both have grown, fossil energy still dominates. Zero-carbon’s visible rise in the 1990s and 2000s highlights the slow shift toward cleaner energy sources.</p>
       <p><strong>Color legend:</strong> Gray = fossil fuels; Green = zero-carbon sources.</p>`
   }
 ];
@@ -22,7 +22,7 @@ const tooltip = d3.select("#tooltip");
 const svg = d3.select("#chart");
 const { width: svgW, height: svgH } = svg.node().getBoundingClientRect();
 
-const margin = { top: 40, right: 20, bottom: 50, left: 80 };
+const margin = { top: 40, right: 20, bottom: 60, left: 100 };
 const innerWidth  = svgW - margin.left - margin.right;
 const innerHeight = svgH - margin.top  - margin.bottom;
 
@@ -157,14 +157,12 @@ function scene2() {
 
 function drawAxes(yLabel, xLabel) {
   g.append("g")
-    .call(d3.axisLeft(y).tickFormat(d => {
-      const fmt = d3.format(",")(d);
-      return fmt; 
-    }));
+    .call(d3.axisLeft(y).tickFormat(d3.format(",")));
+  
   g.append("text")
     .attr("transform", "rotate(-90)")
     .attr("x", -innerHeight / 2)
-    .attr("y", -40)
+    .attr("y", -margin.left + 20)
     .style("text-anchor", "middle")
     .style("font-size", "0.8rem")
     .text(yLabel);
@@ -172,9 +170,10 @@ function drawAxes(yLabel, xLabel) {
   g.append("g")
     .attr("transform", `translate(0,${innerHeight})`)
     .call(d3.axisBottom(x).tickFormat(d3.format("d")));
+
   g.append("text")
     .attr("x", innerWidth / 2)
-    .attr("y", innerHeight + 20)
+    .attr("y", innerHeight + margin.bottom - 10)
     .style("text-anchor", "middle")
     .style("font-size", "0.8rem")
     .text(xLabel);
