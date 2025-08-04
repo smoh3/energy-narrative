@@ -7,34 +7,31 @@
 </head>
 <body>
   <div id="container">
-    <!-- Persistent page title -->
-    <h1>Global Energy: A Narrative Visualization</h1>
-    <p id="page-description">
-      Explore how the world’s energy consumption has grown over time and the slow rise of clean energy sources.
+    <h1 id="page-title">Global Energy: A Narrative Visualization</h1>
+    <p id="page-intro">
+      Explore how primary energy consumption and the rise of renewables have shaped global energy use since 1965. 
+      Hover over any point to see its exact value.
     </p>
 
-    <!-- Two-column layout: chart on left, narrative sidebar on right -->
-    <div id="main-content">
+    <h2 id="title"></h2>
+    <div id="scene-content">
       <div id="chart-area">
         <svg id="chart"></svg>
-        <div id="annotation"></div>
       </div>
-      <div id="sidebar"></div>
+      <div id="text-area">
+        <p id="description"></p>
+      </div>
     </div>
 
-    <!-- Prev/Next controls -->
     <div id="controls">
       <button id="prev">← Prev</button>
       <button id="next">Next →</button>
     </div>
 
-    <!-- Tooltip for hover details -->
     <div id="tooltip"></div>
   </div>
 
-  <!-- D3 + (annotation lib still loaded for future use) -->
   <script src="https://d3js.org/d3.v7.min.js"></script>
-  <script src="https://unpkg.com/d3-svg-annotation@2.5.1/d3-annotation.min.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

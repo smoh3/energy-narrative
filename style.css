@@ -9,46 +9,44 @@ body {
   margin: auto;
 }
 
-/* Left-align the main titles */
-h1 {
+#page-title {
   text-align: left;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.2em;
 }
 
-#page-description {
+#page-intro {
   text-align: left;
   margin-top: 0;
   margin-bottom: 1.5rem;
   font-style: italic;
-  color: #555;
 }
 
-/* Two-column flex container */
-#main-content {
+h2 {
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+#scene-content {
   display: flex;
   gap: 1rem;
   align-items: flex-start;
+  margin-bottom: 1rem;
 }
 
-/* Chart takes 2/3 of width */
 #chart-area {
   flex: 2;
   position: relative;
   height: 400px;
 }
 
-/* Sidebar takes 1/3 of width */
-#sidebar {
+#text-area {
   flex: 1;
   text-align: left;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   line-height: 1.4;
-  color: #333;
 }
 
-/* Overlay SVG for annotations (unused) */
-svg#chart,
-#annotation svg {
+svg#chart {
   position: absolute;
   top: 0;
   left: 0;
@@ -56,14 +54,9 @@ svg#chart,
   height: 100%;
 }
 
-#annotation {
-  pointer-events: none;
-}
-
-/* Controls */
 #controls {
-  margin-top: 1rem;
   text-align: center;
+  margin-bottom: 2rem;
 }
 
 button {
@@ -71,26 +64,29 @@ button {
   margin: 0 0.5rem;
 }
 
-/* Gray out disabled buttons */
 button:disabled {
   opacity: 0.5;
   cursor: default;
 }
 
-/* Tooltip styling */
 #tooltip {
   position: absolute;
-  background: white;
+  background-color: white;
   border: 1px solid #aaa;
   padding: 4px 8px;
-  font-size: 0.8rem;
   pointer-events: none;
+  font-size: 0.8rem;
   opacity: 0;
   transition: opacity 0.1s ease;
 }
 
-/* Invisible hover circles */
 circle.datapoint {
   fill: transparent;
   cursor: crosshair;
+}
+
+@media (max-width: 700px) {
+  #scene-content {
+    flex-direction: column;
+  }
 }
