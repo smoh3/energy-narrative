@@ -17,37 +17,45 @@ const g = svg.append("g")
 const x = d3.scaleLinear().range([0, width]);
 const y = d3.scaleLinear().range([height, 0]);
 
-// LOAD DATA from OWID’s public bucket :contentReference[oaicite:0]{index=0}
+// Load data from OWID’s public bucket
 d3.csv(
   "https://nyc3.digitaloceanspaces.com/owid-public/data/energy/owid-energy-data.csv",
   d3.autoType
 )
   .then(data => {
-    const world = data.filter(d => d.iso_code === "OWID_WRL");
+    // Try filtering by iso_code first
+    let world = data.filter(d => d.iso_code === "OWID_WRL");
+    if (world.length === 0) {
+      console.warn("No OWID_WRL rows—falling back to country === 'World'");
+      world = data.filter(d => d.country === "World");
+    }
     console.log("Data loaded, world rows:", world.length);
     if (!world.length) {
-      console.error("No OWID_WRL rows—check the CSV URL or iso_code");
+      console.error("No 'World' rows—cannot render charts");
       return;
     }
 
-    // Compute the three series
+    // Compute derived metrics
     world.forEach(d => {
-      d.primary        = d.primary_energy_consumption;
-      d.renewablesShare= (d.renewables_consumption / d.primary) * 100;
-      d.fossil         = d.coal_consumption + d.oil_consumption + d.gas_consumption;
-      d.zeroCarbon     = d.nuclear_consumption + d.renewables_consumption;
+      d.primary         = d.primary_energy_consumption;
+      d.renewablesShare = (d.renewables_consumption / d.primary) * 100;
+      d.fossil          = d.coal_consumption + d.oil_consumption + d.gas_consumption;
+      d.zeroCarbon      = d.nuclear_consumption + d.renewables_consumption;
     });
 
-    // Initial domains for scene 0
+    // Initial domains for Scene 0
     x.domain(d3.extent(world, d => d.year));
     y.domain([0, d3.max(world, d => d.primary)]);
 
+    // Expose for scene functions
     window.world = world;
+
+    // Draw first scene
     render();
   })
   .catch(err => console.error("Data load failed:", err));
 
-// RENDER dispatcher
+// Dispatcher: clears & draws current scene
 function render() {
   const titles = [
     "Total Primary Energy Consumption (PJ)",
@@ -60,7 +68,7 @@ function render() {
   scenes[currentScene]();
 }
 
-// SCENE 0: Total Primary Energy
+// Scene 0: Total primary energy line
 function scene0() {
   const line = d3.line()
     .x(d => x(d.year))
@@ -79,7 +87,7 @@ function scene0() {
   annotate(last.year, last.primary, `${last.year}: ${Math.round(last.primary)} PJ`);
 }
 
-// SCENE 1: Renewables Share
+// Scene 1: Renewables share
 function scene1() {
   y.domain([0, 100]);
 
@@ -100,7 +108,7 @@ function scene1() {
   annotate(cross.year, cross.renewablesShare, `~${cross.year}: 10% Renewables`);
 }
 
-// SCENE 2: Fossil vs Zero-Carbon Stack
+// Scene 2: Stacked fossil vs zero‐carbon
 function scene2() {
   y.domain([0, d3.max(world, d => d.fossil + d.zeroCarbon)]);
   const series = d3.stack().keys(["fossil", "zeroCarbon"])(world);
@@ -127,7 +135,7 @@ function scene2() {
            `${mid.year}: Zero-carbon growth`, -60, 20);
 }
 
-// AXES helper
+// Draw axes
 function drawAxes() {
   g.append("g").call(d3.axisLeft(y));
   g.append("g")
@@ -135,7 +143,7 @@ function drawAxes() {
     .call(d3.axisBottom(x).tickFormat(d3.format("d")));
 }
 
-// ANNOTATION helper
+// Add annotation callout
 function annotate(year, val, label, dx = -50, dy = -50) {
   const ann = [{
     note: { label },
@@ -143,6 +151,7 @@ function annotate(year, val, label, dx = -50, dy = -50) {
     dx, dy,
     subject: { radius: 4 }
   }];
+
   d3.select("#annotation")
     .append("svg")
       .attr("width", width)
@@ -153,7 +162,7 @@ function annotate(year, val, label, dx = -50, dy = -50) {
     );
 }
 
-// CONTROLS
+// Prev/Next controls
 d3.select("#prev").on("click", () => {
   if (currentScene > 0) currentScene--;
   render();
