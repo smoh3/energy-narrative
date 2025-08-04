@@ -9,25 +9,30 @@
   <div id="container">
     <!-- Persistent page title -->
     <h1>Global Energy: A Narrative Visualization</h1>
-    <!-- Dynamic scene title -->
-    <h2 id="title"></h2>
-    <!-- Scene description -->
-    <p id="description"></p>
-    <!-- Chart + annotation overlay -->
-    <div id="chart-area">
-      <svg id="chart"></svg>
-      <div id="annotation"></div>
+    <p id="page-description">
+      Explore how the world’s energy consumption has grown over time and the slow rise of clean energy sources.
+    </p>
+
+    <!-- Two-column layout: chart on left, narrative sidebar on right -->
+    <div id="main-content">
+      <div id="chart-area">
+        <svg id="chart"></svg>
+        <div id="annotation"></div>
+      </div>
+      <div id="sidebar"></div>
     </div>
+
     <!-- Prev/Next controls -->
     <div id="controls">
       <button id="prev">← Prev</button>
       <button id="next">Next →</button>
     </div>
-    <!-- Tooltip element -->
+
+    <!-- Tooltip for hover details -->
     <div id="tooltip"></div>
   </div>
 
-  <!-- D3 and annotation libs -->
+  <!-- D3 + (annotation lib still loaded for future use) -->
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="https://unpkg.com/d3-svg-annotation@2.5.1/d3-annotation.min.js"></script>
   <script src="script.js"></script>
