@@ -162,7 +162,7 @@ function drawAxes(yLabel, xLabel) {
   g.append("text")
     .attr("transform", "rotate(-90)")
     .attr("x", -innerHeight / 2)
-    .attr("y", -margin.left + 20)
+    .attr("y", -margin.left + 40)
     .style("text-anchor", "middle")
     .style("font-size", "0.8rem")
     .text(yLabel);
@@ -173,7 +173,7 @@ function drawAxes(yLabel, xLabel) {
 
   g.append("text")
     .attr("x", innerWidth / 2)
-    .attr("y", innerHeight + margin.bottom - 20)
+    .attr("y", innerHeight + margin.bottom - 40)
     .style("text-anchor", "middle")
     .style("font-size", "0.8rem")
     .text(xLabel);
