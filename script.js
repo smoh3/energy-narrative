@@ -1,11 +1,32 @@
-// PARAMETERS
+// script.js
+
+// Scene management
 let currentScene = 0;
 const scenes = [scene0, scene1, scene2];
 
-// SVG & margin setup
+// Scene titles & descriptions
+const sceneInfo = [
+  {
+    title: "Total Primary Energy Consumption (PJ)",
+    desc: "Global energy use rose steadily from 43 360 PJ in 1965 to over 170 000 PJ today."
+  },
+  {
+    title: "Renewables Share of Total Energy (%)",
+    desc: "Renewables remained under 6% of global energy until the 2000s, only reaching 10% around 2016."
+  },
+  {
+    title: "Fossil vs. Zero-Carbon Energy",
+    desc: "Zero-carbon sources (nuclear + renewables) have grown, but still trail behind fossil fuels."
+  }
+];
+
+// Create tooltip
+const tooltip = d3.select("#tooltip");
+
+// SVG and margins
 const svg = d3.select("#chart");
 const { width: svgW, height: svgH } = svg.node().getBoundingClientRect();
-const margin = { top: 40, right: 20, bottom: 40, left: 60 };
+const margin = { top: 40, right: 20, bottom: 60, left: 70 };
 const innerWidth  = svgW - margin.left - margin.right;
 const innerHeight = svgH - margin.top  - margin.bottom;
 const g = svg.append("g")
@@ -15,69 +36,64 @@ const g = svg.append("g")
 const x = d3.scaleLinear().range([0, innerWidth]);
 const y = d3.scaleLinear().range([innerHeight, 0]);
 
-// Load CSV
+// Load data
 d3.csv(
   "https://nyc3.digitaloceanspaces.com/owid-public/data/energy/owid-energy-data.csv",
   d3.autoType
-)
-  .then(data => {
-    // filter for country === "World"
-    const worldRaw = data.filter(d => d.country === "World");
-    console.log("Raw World rows:", worldRaw.length);
+).then(data => {
+  // Filter to the "World" rows with valid energy data
+  const worldRaw = data.filter(d => d.country === "World");
+  const world = worldRaw.filter(d => Number.isFinite(d.primary_energy_consumption));
+  if (!world.length) return console.error("No valid data to plot");
 
-    // keep only those with a finite primary_energy_consumption
-    const world = worldRaw.filter(d => Number.isFinite(d.primary_energy_consumption));
-    console.log("Filtered World rows (valid primary):", world.length);
-    if (!world.length) return console.error("No valid rows to plot");
+  // Derive metrics
+  world.forEach(d => {
+    d.primary         = d.primary_energy_consumption;
+    d.renewablesShare = d.renewables_consumption / d.primary * 100;
+    d.fossil          = (d.coal_consumption  || 0)
+                      + (d.oil_consumption   || 0)
+                      + (d.gas_consumption   || 0);
+    d.zeroCarbon      = (d.nuclear_consumption  || 0)
+                      + (d.renewables_consumption || 0);
+  });
 
-    // compute derived metrics
-    world.forEach(d => {
-      d.primary         = d.primary_energy_consumption;
-      d.renewablesShare = d.renewables_consumption / d.primary * 100;
-      d.fossil          = (d.coal_consumption  || 0)
-                        + (d.oil_consumption   || 0)
-                        + (d.gas_consumption   || 0);
-      d.zeroCarbon      = (d.nuclear_consumption  || 0)
-                        + (d.renewables_consumption || 0);
-    });
+  // Domains based on primary energy
+  x.domain(d3.extent(world, d => d.year));
+  y.domain([0, d3.max(world, d => d.primary)]);
 
-    // initial domains for scene0
-    x.domain(d3.extent(world, d => d.year));
-    y.domain([0, d3.max(world, d => d.primary)]);
+  // Expose for scene functions
+  window.world = world;
 
-    // expose globally
-    window.world = world;
+  // Initial render
+  render();
+}).catch(err => console.error("Data load failed:", err));
 
-    // draw first scene
-    render();
-  })
-  .catch(err => console.error("Data load failed:", err));
-
-// render dispatcher
+// Render dispatcher
 function render() {
-  const titles = [
-    "Total Primary Energy Consumption (PJ)",
-    "Renewables Share of Total Energy (%)",
-    "Fossil vs. Zero-Carbon Energy"
-  ];
-  d3.select("#title").text(titles[currentScene]);
+  // Update title & description
+  d3.select("#title").text(sceneInfo[currentScene].title);
+  d3.select("#description").text(sceneInfo[currentScene].desc);
+
+  // Clear old
   d3.select("#annotation").selectAll("*").remove();
   g.selectAll("*").remove();
+
+  // Draw scene
   scenes[currentScene]();
 
-  // disable buttons at ends
+  // Disable buttons at ends
   d3.select("#prev").property("disabled", currentScene === 0);
   d3.select("#next").property("disabled", currentScene === scenes.length - 1);
 }
 
-// SCENE 0: Total primary energy line + tooltip circles + static annotation
+// SCENE 0: Total primary energy with tooltips + baseline annotation
 function scene0() {
-  // line generator skipping NaNs
   const line = d3.line()
     .defined(d => Number.isFinite(d.primary))
     .x(d => x(d.year))
     .y(d => y(d.primary));
 
+  // Draw line
   g.append("path")
     .datum(world)
     .attr("fill", "none")
@@ -85,7 +101,7 @@ function scene0() {
     .attr("stroke-width", 2)
     .attr("d", line);
 
-  // tooltip circles
+  // Tooltip circles
   g.selectAll("circle.datapoint")
     .data(world)
     .join("circle")
@@ -93,21 +109,33 @@ function scene0() {
       .attr("cx", d => x(d.year))
       .attr("cy", d => y(d.primary))
       .attr("r", 6)
-    .append("title")
-      .text(d => `${d.year}: ${Math.round(d.primary)} PJ`);
+      .on("mouseover", (event, d) => {
+        tooltip.style("opacity", 1)
+               .html(`${d.year}: ${d3.format(",")(Math.round(d.primary))} PJ`);
+      })
+      .on("mousemove", event => {
+        tooltip.style("left", (event.pageX + 10) + "px")
+               .style("top",  (event.pageY - 28) + "px");
+      })
+      .on("mouseout", () => {
+        tooltip.style("opacity", 0);
+      });
 
   drawAxes();
 
-  // static annotation on the first point
+  // Baseline annotation at 1965
   const first = world[0];
-  annotate(first.year, first.primary,
-           `${first.year}: ${Math.round(first.primary)} PJ`, 
-           30, -30);
+  annotate(
+    first.year,
+    first.primary,
+    `${first.year}: ${d3.format(",")(Math.round(first.primary))} PJ`,
+    30,
+    -30
+  );
 }
 
-// SCENE 1: Renewables share + tooltips + existing annotation
+// SCENE 1: Renewables share with tooltips + 10% callout
 function scene1() {
-  // y-domain 0–100%
   y.domain([0, 100]);
 
   const line = d3.line()
@@ -115,6 +143,7 @@ function scene1() {
     .x(d => x(d.year))
     .y(d => y(d.renewablesShare));
 
+  // Draw line
   g.append("path")
     .datum(world)
     .attr("fill", "none")
@@ -122,7 +151,7 @@ function scene1() {
     .attr("stroke-width", 2)
     .attr("d", line);
 
-  // tooltip circles
+  // Tooltip circles
   g.selectAll("circle.datapoint")
     .data(world)
     .join("circle")
@@ -130,23 +159,36 @@ function scene1() {
       .attr("cx", d => x(d.year))
       .attr("cy", d => y(d.renewablesShare))
       .attr("r", 6)
-    .append("title")
-      .text(d => `${d.year}: ${d.renewablesShare.toFixed(1)}%`);
+      .on("mouseover", (event, d) => {
+        tooltip.style("opacity", 1)
+               .html(`${d.year}: ${d.renewablesShare.toFixed(1)}%`);
+      })
+      .on("mousemove", event => {
+        tooltip.style("left", (event.pageX + 10) + "px")
+               .style("top",  (event.pageY - 28) + "px");
+      })
+      .on("mouseout", () => {
+        tooltip.style("opacity", 0);
+      });
 
   drawAxes();
 
-  // callout at ~10%
+  // Callout at first ~10% crossing
   const cross = world.find(d => d.renewablesShare >= 10);
-  annotate(cross.year, cross.renewablesShare,
-           `~${cross.year}: 10% Renewables`,
-           -60, -40);
+  annotate(
+    cross.year,
+    cross.renewablesShare,
+    `~${cross.year}: 10% Renewables`,
+    -60,
+    -40
+  );
 }
 
-// SCENE 2: Stacked fossil vs zero-carbon + static annotation
+// SCENE 2: Fossil vs zero-carbon stacked area + mid-90s callout
 function scene2() {
   y.domain([0, d3.max(world, d => d.fossil + d.zeroCarbon)]);
 
-  const series = d3.stack().keys(["fossil", "zeroCarbon"])(world);
+  const series = d3.stack().keys(["fossil","zeroCarbon"])(world);
 
   const color = d3.scaleOrdinal()
     .domain(["fossil","zeroCarbon"])
@@ -167,21 +209,49 @@ function scene2() {
 
   drawAxes();
 
+  // Callout at mid-1990s
   const mid = world[Math.floor(world.length/2)];
-  annotate(mid.year, mid.fossil + mid.zeroCarbon,
-           `${mid.year}: Zero-carbon growth`,
-           -60, 20);
+  annotate(
+    mid.year,
+    mid.fossil + mid.zeroCarbon,
+    `${mid.year}: Zero-carbon growth`,
+    -50,
+    -30
+  );
 }
 
-// helper: draw axes
+// AXES + units
 function drawAxes() {
-  g.append("g").call(d3.axisLeft(y));
+  // Y axis with "PJ"
+  g.append("g")
+    .call(d3.axisLeft(y)
+      .tickFormat(d => d3.format(",")(d) + " PJ"));
+
+  // Y axis label
+  g.append("text")
+    .attr("transform", "rotate(-90)")
+    .attr("y", -margin.left + 15)
+    .attr("x", -innerHeight / 2)
+    .attr("dy", "-1.2em")
+    .style("text-anchor", "middle")
+    .style("font-weight", "bold")
+    .text("Primary Energy (PJ)");
+
+  // X axis
   g.append("g")
     .attr("transform", `translate(0,${innerHeight})`)
     .call(d3.axisBottom(x).tickFormat(d3.format("d")));
+
+  // X axis label
+  g.append("text")
+    .attr("x", innerWidth / 2)
+    .attr("y", innerHeight + margin.bottom - 10)
+    .style("text-anchor", "middle")
+    .style("font-weight", "bold")
+    .text("Year");
 }
 
-// helper: static callout annotation
+// Static callout helper
 function annotate(year, val, label, dx = -50, dy = -50) {
   const ann = [{
     note: { label },
@@ -195,7 +265,10 @@ function annotate(year, val, label, dx = -50, dy = -50) {
     .append("svg")
       .attr("width", innerWidth)
       .attr("height", innerHeight)
-    .call(d3.annotation().annotations(ann).type(d3.annotationCalloutCircle));
+    .call(d3.annotation()
+      .annotations(ann)
+      .type(d3.annotationCalloutCircle)
+    );
 }
 
 // Prev/Next wiring

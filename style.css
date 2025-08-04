@@ -10,6 +10,20 @@ body {
   text-align: center;
 }
 
+h1 {
+  margin-bottom: 0.2em;
+}
+
+h2 {
+  margin-top: 0;
+  margin-bottom: 0.5em;
+}
+
+#description {
+  margin-bottom: 1rem;
+  font-style: italic;
+}
+
 #chart-area {
   position: relative;
   width: 100%;
@@ -45,7 +59,19 @@ button:disabled {
   cursor: default;
 }
 
-/* invisible but hoverable circles */
+/* Tooltip styling */
+#tooltip {
+  position: absolute;
+  background-color: white;
+  border: 1px solid #aaa;
+  padding: 4px 8px;
+  pointer-events: none;
+  font-size: 0.8rem;
+  opacity: 0;
+  transition: opacity 0.1s ease;
+}
+
+/* Invisible but hoverable circles */
 circle.datapoint {
   fill: transparent;
   cursor: crosshair;

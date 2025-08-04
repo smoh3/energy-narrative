@@ -2,20 +2,29 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Energy Narrative</title>
+  <title>Global Energy Narrative</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div id="container">
-    <h1 id="title"></h1>
+    <!-- Persistent page title -->
+    <h1>Global Energy: A Narrative Visualization</h1>
+    <!-- Dynamic scene title -->
+    <h2 id="title"></h2>
+    <!-- Scene description -->
+    <p id="description"></p>
+    <!-- Chart + annotation overlay -->
     <div id="chart-area">
       <svg id="chart"></svg>
       <div id="annotation"></div>
     </div>
+    <!-- Prev/Next controls -->
     <div id="controls">
       <button id="prev">← Prev</button>
       <button id="next">Next →</button>
     </div>
+    <!-- Tooltip element -->
+    <div id="tooltip"></div>
   </div>
 
   <!-- D3 and annotation libs -->
